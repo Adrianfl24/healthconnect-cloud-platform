@@ -23,6 +23,7 @@ public class Utilizator {
     private String nume;
     private String prenume;
     private String telefon;
+    private String cnp;
     
     @Enumerated(EnumType.STRING)
     private Role rol;
@@ -30,16 +31,19 @@ public class Utilizator {
     // Constructori
     public Utilizator() {}
 
-    public Utilizator(String email, String parola, String nume, String prenume, String telefon, Role rol) {
+    public Utilizator(String email, String parola, String nume, String prenume, String telefon, Role rol,String cnp) {
         this.email = email;
         this.parola = parola;
         this.nume = nume;
         this.prenume = prenume;
         this.telefon = telefon;
         this.rol = rol;
+         this.cnp = cnp;
     }
 
     // Getters și Setters
+      public String getCnp() { return cnp; }
+    public void setCnp(String cnp) { this.cnp = cnp; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getEmail() { return email; }

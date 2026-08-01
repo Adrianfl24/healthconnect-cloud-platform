@@ -2,10 +2,18 @@ package com.healthconnect.platform.controller;
 
 import com.healthconnect.platform.model.*;
 import com.healthconnect.platform.repository.*;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 
 @Controller
@@ -26,95 +34,203 @@ public class WebController {
         this.programareRepository = programareRepository;
     }
 
-    // 1. Pagina Principală (Landing Page cu Login & Register)
+    // 1. Pagina Principală (Landing Page)
     @GetMapping("/")
     public String index() {
         return "index";
     }
 
-    // 2. Procesare Logare
+    // 2. Afișare Pagina de Login / Înregistrare
+    @GetMapping("/login")
+    public String loginPage(HttpSession session) {
+        return "login";
+    }
+
+    // Logout
+    @GetMapping("/logout")
+    public String logout(HttpSession session) {
+        session.invalidate();
+        return "redirect:/login";
+    }
+
+    // 3. Procesare Logare (Versiune Bulletproof + Debugging in Consola)
     @PostMapping("/login")
     public String login(@RequestParam String username, 
                         @RequestParam String parola, 
+                        HttpSession session,
                         Model model) {
         
-        // Verificare specială cont Admin Suprem
-        if (username.equals("adrianfl24") && parola.equals("admin")) {
+        // Curățăm spațiile goale accidentale de la început și final
+        String inputUser = username != null ? username.trim().toLowerCase() : "";
+        String inputPass = parola != null ? parola.trim() : "";
+
+        System.out.println("\n=== INCERCARE DE LOGARE ===");
+        System.out.println("Ai introdus user: [" + inputUser + "]");
+        System.out.println("Ai introdus parola: [" + inputPass + "]");
+
+        // 1. Verificare Admin Suprem
+        if (inputUser.equalsIgnoreCase("adrianfl24") && inputPass.equals("admin")) {
+            session.setAttribute("userRole", "ADMIN");
+            System.out.println("-> Logare ADMIN cu succes!");
             return "redirect:/admin/dashboard";
         }
 
-        // Căutare în lista de Medici
-        boolean esteMedic = medicRepository.findAll().stream()
-                .anyMatch(m -> (m.getEmail().equalsIgnoreCase(username) || m.getNume().equalsIgnoreCase(username)) 
-                        && m.getParola().equals(parola));
+        // 2. Căutare în lista de Medici
+        for (Medic m : medicRepository.findAll()) {
+            String dbNume = m.getNume() != null ? m.getNume().trim().toLowerCase() : "";
+            String dbEmail = m.getEmail() != null ? m.getEmail().trim().toLowerCase() : "";
+            String dbParola = m.getParola() != null ? m.getParola().trim() : "";
 
-        if (esteMedic) {
-            return "redirect:/medic/dashboard";
+            System.out.println("Verific Medic in DB -> Nume: [" + dbNume + "], Email: [" + dbEmail + "], Parola: [" + dbParola + "]");
+
+            boolean matchUser = dbNume.contains(inputUser) || dbEmail.contains(inputUser);
+            boolean matchParola = dbParola.equals(inputPass);
+
+            if (matchUser && matchParola) {
+                session.setAttribute("loggedInMedicId", m.getId());
+                session.setAttribute("userRole", "MEDIC");
+                System.out.println("-> Logare MEDIC cu succes!");
+                return "redirect:/medic/dashboard";
+            }
         }
 
-        // Căutare în lista de Pacienți
-        boolean estePacient = pacientRepository.findAll().stream()
-                .anyMatch(p -> (p.getEmail().equalsIgnoreCase(username) || p.getNume().equalsIgnoreCase(username)) 
-                        && p.getParola().equals(parola));
+        // 3. Căutare în lista de Pacienți
+        for (Pacient p : pacientRepository.findAll()) {
+            String dbNume = p.getNume() != null ? p.getNume().trim().toLowerCase() : "";
+            String dbEmail = p.getEmail() != null ? p.getEmail().trim().toLowerCase() : "";
+            String dbParola = p.getParola() != null ? p.getParola().trim() : "";
 
-        if (estePacient) {
-            return "redirect:/pacient/dashboard";
+            System.out.println("Verific Pacient in DB -> Nume: [" + dbNume + "], Email: [" + dbEmail + "], Parola: [" + dbParola + "]");
+
+            boolean matchUser = dbNume.contains(inputUser) || dbEmail.contains(inputUser);
+            boolean matchParola = dbParola.equals(inputPass);
+
+            if (matchUser && matchParola) {
+                session.setAttribute("loggedInPacientId", p.getId());
+                session.setAttribute("userRole", "PACIENT");
+                System.out.println("-> Logare PACIENT cu succes!");
+                return "redirect:/pacient/dashboard";
+            }
         }
 
-        // Dacă datele introduse sunt incorecte
+        // Dacă nicio condiție nu a fost îndeplinită
+        System.out.println("-> LOGARE ESUATA: Nu s-a gasit nicio potrivire intre ce ai scris si baza de date.");
         model.addAttribute("error", true);
-        return "index";
+        return "login";
     }
 
-    // 3. Procesare Înregistrare Cont Nou
+    // 4. Procesare Înregistrare Cont Nou
     @PostMapping("/register")
     public String register(@RequestParam String nume,
                            @RequestParam String email,
                            @RequestParam String parola,
-                           @RequestParam String rol) {
+                           @RequestParam String rol,
+                           HttpSession session) {
 
-        if (rol.equals("ADMIN") || (nume.equalsIgnoreCase("adrianfl24") && parola.equals("admin"))) {
+        String roleClean = rol != null ? rol.trim().toUpperCase() : "PACIENT";
+
+        if (roleClean.equals("ADMIN") || (nume.equalsIgnoreCase("adrianfl24") && parola.equals("admin"))) {
+            session.setAttribute("userRole", "ADMIN");
             return "redirect:/admin/dashboard";
-        } else if (rol.equals("MEDIC")) {
+        } else if (roleClean.equals("MEDIC")) {
             Medic m = new Medic();
-            m.setNume(nume);
-            m.setEmail(email);
-            m.setParola(parola);
+            m.setNume(nume.trim());
+            m.setEmail(email.trim());
+            m.setParola(parola.trim());
             m.setRol(Role.MEDIC);
             m.setSpecializare("Medicină Generală");
-            m.setCodParafa("PARAF" + (System.currentTimeMillis() % 10000));
-            medicRepository.save(m);
+            // AICI AM ȘTERS GENERAREA AUTOMATĂ A CODULUI DE PARAFĂ
+            m.setAprobat(false); // Contul rămâne în așteptarea validării de către Admin
+            
+            Medic medicSalvat = medicRepository.save(m);
+            session.setAttribute("loggedInMedicId", medicSalvat.getId());
+            session.setAttribute("userRole", "MEDIC");
+            
             return "redirect:/medic/dashboard";
         } else {
             Pacient p = new Pacient();
-            p.setNume(nume);
-            p.setEmail(email);
-            p.setParola(parola);
+            p.setNume(nume.trim());
+            p.setEmail(email.trim());
+            p.setParola(parola.trim());
             p.setRol(Role.PACIENT);
-            pacientRepository.save(p);
+            
+            Pacient pacientSalvat = pacientRepository.save(p);
+            session.setAttribute("loggedInPacientId", pacientSalvat.getId());
+            session.setAttribute("userRole", "PACIENT");
+            
             return "redirect:/pacient/dashboard";
         }
     }
 
-    // 4. Panou Admin Dashboard
+    // 5. Panou Admin Dashboard
     @GetMapping("/admin/dashboard")
     public String adminDashboard(Model model) {
-        model.addAttribute("totalPacienti", pacientRepository.count());
-        model.addAttribute("totalMedici", medicRepository.count());
-        model.addAttribute("totalProgramari", programareRepository.count());
+        var medici = medicRepository.findAll();
+        var servicii = serviciuMedicalRepository.findAll();
+        var pacienti = pacientRepository.findAll();
+        var programari = programareRepository.findAll();
+
+        model.addAttribute("totalPacienti", pacienti.size());
+        model.addAttribute("totalMedici", medici.size());
+        model.addAttribute("totalServicii", servicii.size());
+        model.addAttribute("totalProgramari", programari.size());
+
+        model.addAttribute("medici", medici);
+        model.addAttribute("servicii", servicii);
+
         return "admin-dashboard";
     }
 
-    // 5. Portal Dashboard Pacient
-    @GetMapping("/pacient/dashboard")
-    public String pacientDashboard(Model model) {
-        var servicii = serviciuMedicalRepository.findAll();
-        var programari = programareRepository.findAll();
-        var medici = medicRepository.findAll();
+    // Admin: Schimbare Status Validare Medic (Aprobă / Revocă)
+    @PostMapping("/admin/medic/status")
+    public String schimbaStatusMedic(@RequestParam Long medicId, @RequestParam boolean aprobat) {
+        Medic medic = medicRepository.findById(medicId).orElse(null);
+        if (medic != null) {
+            medic.setAprobat(aprobat);
+            medicRepository.save(medic);
+        }
+        return "redirect:/admin/dashboard";
+    }
 
-        model.addAttribute("servicii", servicii != null ? servicii : java.util.Collections.emptyList());
+    // Admin: Ștergere / Anulare Serviciu Medical
+    @PostMapping("/admin/serviciu/sterge")
+    public String stergeServiciu(@RequestParam Long serviciuId) {
+        serviciuMedicalRepository.deleteById(serviciuId);
+        return "redirect:/admin/dashboard";
+    }
+
+    // 6. Portal Dashboard Pacient
+    // 6. Portal Dashboard Pacient (Filtrat după Țară, Județ și Oraș)
+    @GetMapping("/pacient/dashboard")
+    public String pacientDashboard(HttpSession session, Model model) {
+        Long pacientId = (Long) session.getAttribute("loggedInPacientId");
+        Pacient pacient = pacientId != null ? pacientRepository.findById(pacientId).orElse(null) 
+                                           : pacientRepository.findAll().stream().findFirst().orElse(null);
+
+        // Filtrăm serviciile: medicul trebuie să fie aprobat ȘI să fie din aceeași țară, județ și oraș ca pacientul
+        var serviciiValide = serviciuMedicalRepository.findAll().stream()
+                .filter(s -> {
+                    Medic m = s.getMedic();
+                    if (m == null || !m.isAprobat()) return false;
+                    
+                    // Verificăm dacă pacientul și-a setat locația; dacă da, facem filtrarea
+                    if (pacient != null && pacient.getOras() != null && !pacient.getOras().isBlank()) {
+                        boolean matchTara = pacient.getTara() == null || pacient.getTara().equalsIgnoreCase(m.getTara());
+                        boolean matchJudet = pacient.getJudet() == null || pacient.getJudet().equalsIgnoreCase(m.getJudet());
+                        boolean matchOras = pacient.getOras().equalsIgnoreCase(m.getOras());
+                        return matchTara && matchJudet && matchOras;
+                    }
+                    
+                    // Dacă pacientul nu și-a completat încă profilul/orasul, nu afișăm nimic sau lăsăm gol până își setează locatia
+                    return false;
+                })
+                .toList();
+
+        var programari = programareRepository.findAll();
+
+        model.addAttribute("pacient", pacient);
+        model.addAttribute("servicii", serviciiValide);
         model.addAttribute("programari", programari != null ? programari : java.util.Collections.emptyList());
-        model.addAttribute("medici", medici != null ? medici : java.util.Collections.emptyList());
 
         return "pacient-dashboard";
     }
@@ -123,9 +239,13 @@ public class WebController {
     @PostMapping("/pacient/programeaza")
     public String creazaProgramare(@RequestParam Long serviciuId,
                                   @RequestParam String dataOra,
-                                  @RequestParam String adresa) {
+                                  @RequestParam String adresa,
+                                  HttpSession session) {
+        Long pacientId = (Long) session.getAttribute("loggedInPacientId");
+        Pacient pacient = pacientId != null ? pacientRepository.findById(pacientId).orElse(null) 
+                                           : pacientRepository.findAll().stream().findFirst().orElse(null);
+        
         ServiciuMedical serviciu = serviciuMedicalRepository.findById(serviciuId).orElse(null);
-        Pacient pacient = pacientRepository.findAll().stream().findFirst().orElse(null);
 
         if (pacient != null && serviciu != null) {
             Programare programare = new Programare(
@@ -140,47 +260,120 @@ public class WebController {
         return "redirect:/pacient/dashboard";
     }
 
-    // Pacient: Adăugare Recenzie Medic
-    @PostMapping("/pacient/recenzie/adauga")
-    public String adaugaRecenzie(@RequestParam Long medicId,
-                                @RequestParam Integer nota,
-                                @RequestParam String comentariu) {
-        return "redirect:/pacient/dashboard";
-    }
-
-    // 6. Portal Dashboard Medic
+    // 7. Portal Dashboard Medic
     @GetMapping("/medic/dashboard")
-    public String medicDashboard(Model model) {
+    public String medicDashboard(HttpSession session, Model model) {
+        Long medicId = (Long) session.getAttribute("loggedInMedicId");
+        Medic medic = medicId != null ? medicRepository.findById(medicId).orElse(null) 
+                                      : medicRepository.findAll().stream().findFirst().orElse(null);
+
         var programari = programareRepository.findAll();
         var servicii = serviciuMedicalRepository.findAll();
 
+        model.addAttribute("medic", medic);
         model.addAttribute("programari", programari != null ? programari : java.util.Collections.emptyList());
         model.addAttribute("servicii", servicii != null ? servicii : java.util.Collections.emptyList());
 
         return "medic-dashboard";
     }
 
-    // Medic: Adăugare Serviciu Medical Nou
+    // Medic: Salvare profil complet (Nume, CNP, Telefon, Cod Parafă) și diplomă pe disc
+    @PostMapping("/medic/upload-document")
+    public String uploadDocumentMedic(@RequestParam(value = "nume", required = false) String nume,
+                                     @RequestParam(value = "cnp", required = false) String cnp,
+                                     @RequestParam(value = "telefon", required = false) String telefon,
+                                     @RequestParam(value = "codParafa", required = false) String codParafa,
+                                     @RequestParam(value = "documentFile", required = false) MultipartFile documentFile,
+                                     HttpSession session) {
+        
+        Long medicId = (Long) session.getAttribute("loggedInMedicId");
+        Medic medic = medicId != null ? medicRepository.findById(medicId).orElse(null) 
+                                      : medicRepository.findAll().stream().findFirst().orElse(null);
+
+        if (medic != null) {
+            if (nume != null && !nume.isBlank()) medic.setNume(nume.trim());
+            if (cnp != null && !cnp.isBlank()) medic.setCnp(cnp.trim());
+            if (telefon != null && !telefon.isBlank()) medic.setTelefon(telefon.trim());
+            if (codParafa != null && !codParafa.isBlank()) medic.setCodParafa(codParafa.trim());
+
+            if (documentFile != null && !documentFile.isEmpty()) {
+                try {
+                    String fileName = System.currentTimeMillis() + "_" + documentFile.getOriginalFilename();
+                    
+                    Path uploadPath = Paths.get("uploads");
+                    if (!Files.exists(uploadPath)) {
+                        Files.createDirectories(uploadPath);
+                    }
+
+                    Path filePath = uploadPath.resolve(fileName);
+                    Files.copy(documentFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                    medic.setDiplomaPath(fileName);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            medicRepository.save(medic);
+        }
+
+        return "redirect:/medic/dashboard";
+    }
+
+    // Servire fișiere din folderul uploads direct în browser (Corectat pentru a afișa imagini/PDF-uri)
+    @GetMapping("/uploads/{filename:.+}")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+        try {
+            Path file = Paths.get("uploads").resolve(filename);
+            Resource resource = new UrlResource(file.toUri());
+            
+            if (resource.exists() || resource.isReadable()) {
+                // 1. Detectăm automat tipul fișierului (image/png, image/jpeg, application/pdf etc.)
+                String contentType = Files.probeContentType(file);
+                if (contentType == null) {
+                    contentType = "application/octet-stream"; // fallback generic
+                }
+
+                // 2. Trimitem fișierul cu "Content-Type"-ul corect, ca browserul să știe să-l randeze
+                return org.springframework.http.ResponseEntity.ok()
+                        .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, contentType)
+                        .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                        .body(resource);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return org.springframework.http.ResponseEntity.notFound().build();
+    }
+
+    // Medic: Adăugare Serviciu Medical Nou (DOAR DACA ESTE APROBAT)
     @PostMapping("/medic/serviciu/adauga")
     public String adaugaServiciu(@RequestParam String nume,
                                 @RequestParam String descriere,
                                 @RequestParam Double pret,
-                                @RequestParam Integer durataMinute) {
-        Medic medic = medicRepository.findAll().stream().findFirst().orElse(null);
-        if (medic != null) {
-            ServiciuMedical s = new ServiciuMedical(
-                    nume,
-                    descriere,
-                    pret.floatValue(),
-                    durataMinute,
-                    medic
-            );
+                                @RequestParam Integer durataMinute,
+                                HttpSession session) {
+        
+        Long medicId = (Long) session.getAttribute("loggedInMedicId");
+        Medic medic = medicId != null ? medicRepository.findById(medicId).orElse(null) 
+                                      : medicRepository.findAll().stream().findFirst().orElse(null);
+        
+        // SECURITATE: Salvăm serviciul doar dacă medicul a fost validat
+        if (medic != null && medic.isAprobat()) {
+            ServiciuMedical s = new ServiciuMedical();
+            s.setDenumire(nume.trim());
+            s.setDescriere(descriere.trim());
+            s.setPret(pret.floatValue());
+            s.setDurataMinute(durataMinute);
+            s.setMedic(medic);
+
             serviciuMedicalRepository.save(s);
         }
         return "redirect:/medic/dashboard";
     }
 
-    // Medic: Schimbare Status Programare (Acceptă/Respinge)
+    // Medic: Schimbare Status Programare
     @PostMapping("/medic/programare/status")
     public String schimbaStatus(@RequestParam Long programareId, @RequestParam String status) {
         Programare p = programareRepository.findById(programareId).orElse(null);

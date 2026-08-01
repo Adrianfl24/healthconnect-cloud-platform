@@ -3,249 +3,739 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard Pacient - HealthConnect</title>
+    <title>Portal Pacient - HealthConnect</title>
     <!-- Bootstrap 5 CSS -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <!-- FontAwesome Icons -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- Leaflet CSS (Pentru Harta Interactivă) -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <!-- Google Font: Plus Jakarta Sans -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
     <style>
-      .card-custom {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      :root {
+        --primary-blue: #0284c7;
+        --primary-hover: #0369a1;
+        --bg-light: #f8fafc;
+        --text-main: #0f172a;
+        --text-muted: #475569;
       }
-      .navbar-brand-custom {
+
+      body {
+        background-color: var(--bg-light);
+        color: var(--text-main);
+        font-family: "Plus Jakarta Sans", sans-serif;
+        margin: 0;
+        padding: 0;
+        font-size: 1.05rem;
+        background-image:
+          radial-gradient(
+            circle at 10% 15%,
+            rgba(56, 189, 248, 0.12) 0%,
+            transparent 45%
+          ),
+          radial-gradient(
+            circle at 90% 85%,
+            rgba(14, 165, 233, 0.1) 0%,
+            transparent 45%
+          );
+      }
+
+      .navbar-custom {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #e2e8f0;
+        padding: 20px 30px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      }
+
+      .brand-logo {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--primary-blue);
+      }
+
+      .dashboard-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 35px;
+        box-shadow: 0 10px 30px rgba(2, 132, 199, 0.05);
+        width: 100%;
+      }
+
+      .card-title-custom {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 25px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .form-control-custom {
+        background-color: #f8fafc;
+        border: 1.5px solid #cbd5e1;
+        color: var(--text-main);
+        border-radius: 14px;
+        padding: 14px 18px;
+        font-size: 1.05rem;
+      }
+
+      .form-control-custom:focus {
+        background-color: #ffffff;
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 0 0.25rem rgba(2, 132, 199, 0.15);
+      }
+
+      .btn-action-primary {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        border: none;
+        color: white;
+        font-weight: 800;
+        font-size: 1.1rem;
+        border-radius: 50px;
+        padding: 16px 32px;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 20px rgba(2, 132, 199, 0.25);
+      }
+
+      .btn-action-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(2, 132, 199, 0.4);
+        color: white;
+      }
+
+      .nav-pills .nav-link {
+        color: var(--text-muted);
         font-weight: 700;
-        letter-spacing: 0.5px;
+        border-radius: 16px;
+        padding: 18px 24px;
+        margin-bottom: 15px;
+        font-size: 1.15rem;
+        transition: all 0.3s ease;
+      }
+
+      .nav-pills .nav-link:hover {
+        background-color: #f1f5f9;
+        color: var(--primary-blue);
+      }
+
+      .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        color: white;
+        box-shadow: 0 8px 20px rgba(2, 132, 199, 0.25);
+      }
+
+      /* Stil Hartă Interactivă */
+      #map {
+        height: 350px;
+        width: 100%;
+        border-radius: 16px;
+        border: 2px solid #cbd5e1;
+        margin-top: 10px;
+      }
+
+      .empty-state-box {
+        width: 100%;
+        max-width: 700px;
+        min-height: 400px;
+        margin: 30px auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #f8fafc;
+        border: 3px dashed #cbd5e1;
+        border-radius: 30px;
+        text-align: center;
+        padding: 50px;
+      }
+
+      footer {
+        background: #ffffff;
+        border-top: 1px solid #e2e8f0;
+        padding: 25px 0;
+        margin-top: auto;
       }
     </style>
   </head>
-  <body class="bg-light">
-    <!-- Header / Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
-      <div class="container">
-        <a class="navbar-brand navbar-brand-custom" href="/"
-          >🏥 HealthConnect - Portal Pacient</a
+  <body class="d-flex flex-column min-vh-100">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+      <div
+        class="container-fluid px-4 px-lg-5 d-flex justify-content-between align-items-center"
+      >
+        <a
+          class="navbar-brand brand-logo d-flex align-items-center gap-3 m-0"
+          href="/"
         >
+          <i class="fa-solid fa-hospital-user text-primary fs-1"></i>
+          <span
+            >HealthConnect
+            <small class="fs-5 text-muted fw-bold d-none d-sm-inline"
+              >| Portal Pacient</small
+            ></span
+          >
+        </a>
+
         <div class="d-flex align-items-center gap-3">
-          <span class="text-white small d-none d-md-inline"
-            >Conectat ca Pacient</span
+          <span
+            class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-4 py-2 rounded-pill fw-bold fs-5"
           >
-          <a href="/" class="btn btn-outline-light btn-sm"
-            >Deconectare / Acasă</a
+            <i class="fa-solid fa-user me-1"></i> Cont Pacient
+          </span>
+          <a
+            href="/logout"
+            class="btn btn-outline-danger rounded-pill px-4 py-2 fw-bold"
           >
+            <i class="fa-solid fa-right-from-bracket me-1"></i> Deconectare
+          </a>
         </div>
       </div>
     </nav>
 
-    <div class="container pb-5">
+    <!-- Main Content -->
+    <div class="container-fluid px-4 px-lg-5 py-5 flex-grow-1">
       <div class="row g-4">
-        <!-- COLOANA STANGA: Formular Programare Noua & Formular Recenzie -->
-        <div class="col-lg-5">
-          <!-- 1. Formular Creare Programare -->
-          <div class="card card-custom p-4 mb-4">
-            <h4 class="fw-bold text-primary mb-3">📅 Programează o Vizită</h4>
-            <p class="text-muted small mb-4">
-              Selectează serviciul dorit, adresa și data convenabilă pentru
-              consultația la domiciliu.
-            </p>
-
-            <form action="/pacient/programeaza" method="post">
-              <div class="mb-3">
-                <label class="form-label fw-semibold"
-                  >Alege Serviciul Medical</label
-                >
-                <select name="serviciuId" class="form-select" required>
-                  <option value="" disabled selected>
-                    -- Selectează un serviciu --
-                  </option>
-                  <option
-                    th:each="s : ${servicii}"
-                    th:value="${s.id}"
-                    th:text="${s.denumire} + ' - ' + ${s.pret} + ' RON' + (${s.medic != null} ? ' (Dr. ' + ${s.medic.nume} + ')' : '')"
-                  ></option>
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label fw-semibold"
-                  >Data și Ora Vizitei</label
-                >
-                <input
-                  type="datetime-local"
-                  name="dataOra"
-                  class="form-control"
-                  required
-                />
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label fw-semibold"
-                  >Adresa de Domiciliu</label
-                >
-                <input
-                  type="text"
-                  name="adresa"
-                  class="form-control"
-                  placeholder="Strada, Număr, Bloc, Oraș"
-                  required
-                />
-              </div>
-
-              <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
-                Trimite Solicitarea Vizitei
+        <!-- SIDEBAR STÂNGA -->
+        <div class="col-lg-3 col-xl-2">
+          <div class="dashboard-card p-3 sticky-top" style="top: 120px">
+            <div
+              class="nav flex-column nav-pills"
+              id="v-pills-tab"
+              role="tablist"
+              aria-orientation="vertical"
+            >
+              <button
+                class="nav-link active text-start"
+                id="v-pills-profil-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#v-pills-profil"
+                type="button"
+                role="tab"
+                aria-selected="true"
+              >
+                <i class="fa-solid fa-id-card me-2"></i> Profil & Locație
               </button>
-            </form>
-          </div>
 
-          <!-- 2. Formular Lasă o Recenzie Medicului -->
-          <div class="card card-custom p-4">
-            <h4 class="fw-bold text-warning text-dark mb-3">
-              ⭐ Adaugă Recenzie Medic
-            </h4>
-            <p class="text-muted small mb-3">
-              Spune-ne cum a fost experiența ta cu cadrul medical.
-            </p>
-
-            <form action="/pacient/recenzie/adauga" method="post">
-              <div class="mb-3">
-                <label class="form-label fw-semibold">Alege Medicul</label>
-                <select name="medicId" class="form-select" required>
-                  <option value="" disabled selected>
-                    -- Selectează medicul --
-                  </option>
-                  <option
-                    th:each="m : ${medici}"
-                    th:value="${m.id}"
-                    th:text="'Dr. ' + ${m.nume} + ' (' + ${m.specializare} + ')'"
-                  ></option>
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label fw-semibold">Notă Acordată</label>
-                <select name="nota" class="form-select" required>
-                  <option value="5">⭐⭐⭐⭐⭐ (5/5 - Excelent)</option>
-                  <option value="4">⭐⭐⭐⭐ (4/5 - Foarte Bine)</option>
-                  <option value="3">⭐⭐⭐ (3/5 - Satisfăcător)</option>
-                  <option value="2">⭐⭐ (2/5 - Slăbuț)</option>
-                  <option value="1">⭐ (1/5 - Nesatisfăcător)</option>
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label fw-semibold">Comentariul Tău</label>
-                <textarea
-                  name="comentariu"
-                  class="form-control"
-                  rows="3"
-                  placeholder="Scrie câteva cuvinte despre consultație..."
-                  required
-                ></textarea>
-              </div>
-
-              <button type="submit" class="btn btn-warning w-100 fw-bold py-2">
-                Trimite Recenzia
+              <button
+                class="nav-link text-start"
+                id="v-pills-servicii-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#v-pills-servicii"
+                type="button"
+                role="tab"
+                aria-selected="false"
+              >
+                <i class="fa-solid fa-notes-medical me-2"></i> Servicii Zonale
               </button>
-            </form>
+
+              <button
+                class="nav-link text-start"
+                id="v-pills-programari-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#v-pills-programari"
+                type="button"
+                role="tab"
+                aria-selected="false"
+              >
+                <i class="fa-solid fa-calendar-check me-2"></i> Programările
+                Mele
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- COLOANA DREAPTA: Tabel Istoric Programari -->
-        <div class="col-lg-7">
-          <div class="card card-custom p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h4 class="fw-bold text-dark mb-0">
-                📋 Istoricul Programărilor Tale
-              </h4>
-              <span
-                class="badge bg-secondary"
-                th:text="${#lists.size(programari)} + ' programări'"
-                >0 programări</span
-              >
+        <!-- CONȚINUT DREAPTA -->
+        <div class="col-lg-9 col-xl-10">
+          <div class="tab-content" id="v-pills-tabContent">
+            <!-- PANE 1: Profil & Adresă cu Hartă Interactivă -->
+            <div
+              class="tab-pane fade show active"
+              id="v-pills-profil"
+              role="tabpanel"
+              tabindex="0"
+            >
+              <div class="dashboard-card">
+                <div class="card-title-custom">
+                  <i class="fa-solid fa-map-location-dot text-primary fs-2"></i>
+                  <span
+                    >Date Personale & Adresă Domiciliu (Pentru Vizite
+                    Medicale)</span
+                  >
+                </div>
+
+                <form
+                  action="/pacient/upload-profil"
+                  method="post"
+                  id="profilForm"
+                >
+                  <div class="row g-4">
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-secondary"
+                        >Nume Complet</label
+                      >
+                      <input
+                        type="text"
+                        name="nume"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null ? pacient.nume : ''}"
+                        required
+                      />
+                    </div>
+
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-secondary"
+                        >Cod Numeric Personal (CNP)</label
+                      >
+                      <input
+                        type="text"
+                        name="cnp"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null ? pacient.cnp : ''}"
+                        maxlength="13"
+                        required
+                      />
+                    </div>
+
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-secondary"
+                        >Telefon Contact</label
+                      >
+                      <input
+                        type="tel"
+                        name="telefon"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null ? pacient.telefon : ''}"
+                        required
+                      />
+                    </div>
+
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-secondary"
+                        >Țară</label
+                      >
+                      <input
+                        type="text"
+                        name="tara"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null && pacient.tara != null ? pacient.tara : 'România'}"
+                        required
+                      />
+                    </div>
+
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-secondary"
+                        >Județ</label
+                      >
+                      <input
+                        type="text"
+                        name="judet"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null ? pacient.judet : ''}"
+                        placeholder="ex: Dâmbovița"
+                        required
+                      />
+                    </div>
+
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-secondary"
+                        >Oraș</label
+                      >
+                      <input
+                        type="text"
+                        name="oras"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null ? pacient.oras : ''}"
+                        placeholder="ex: Târgoviște"
+                        required
+                      />
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label fw-bold text-secondary"
+                        >Stradă</label
+                      >
+                      <input
+                        type="text"
+                        name="strada"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null ? pacient.strada : ''}"
+                        placeholder="ex: Calea Domnească"
+                        required
+                      />
+                    </div>
+
+                    <div class="col-md-2">
+                      <label class="form-label fw-bold text-secondary"
+                        >Număr</label
+                      >
+                      <input
+                        type="text"
+                        name="numar"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null ? pacient.numar : ''}"
+                        placeholder="ex: 15"
+                        required
+                      />
+                    </div>
+
+                    <div class="col-md-2">
+                      <label class="form-label fw-bold text-secondary"
+                        >Bloc</label
+                      >
+                      <input
+                        type="text"
+                        name="bloc"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null ? pacient.bloc : ''}"
+                        placeholder="ex: B2"
+                      />
+                    </div>
+
+                    <div class="col-md-1">
+                      <label class="form-label fw-bold text-secondary"
+                        >Scară</label
+                      >
+                      <input
+                        type="text"
+                        name="scara"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null ? pacient.scara : ''}"
+                        placeholder="A"
+                      />
+                    </div>
+
+                    <div class="col-md-1">
+                      <label class="form-label fw-bold text-secondary"
+                        >Ap.</label
+                      >
+                      <input
+                        type="text"
+                        name="apartament"
+                        class="form-control form-control-custom"
+                        th:value="${pacient != null ? pacient.apartament : ''}"
+                        placeholder="12"
+                      />
+                    </div>
+
+                    <!-- Harta Interactivă Leaflet -->
+                    <div class="col-12 mt-4">
+                      <label class="form-label fw-bold text-secondary"
+                        >Plasează PIN-ul pe hartă pentru locația exactă a
+                        domiciliului:</label
+                      >
+                      <div id="map"></div>
+                      <input
+                        type="hidden"
+                        id="latitudine"
+                        name="latitudine"
+                        th:value="${pacient != null ? pacient.latitudine : ''}"
+                      />
+                      <input
+                        type="hidden"
+                        id="longitudine"
+                        name="longitudine"
+                        th:value="${pacient != null ? pacient.longitudine : ''}"
+                      />
+                      <small class="text-muted d-block mt-2"
+                        >Dă click pe hartă pentru a actualiza poziția exactă
+                        unde dorești vizita medicală.</small
+                      >
+                    </div>
+                  </div>
+
+                  <div class="mt-4 text-start border-top pt-4">
+                    <button type="submit" class="btn btn-action-primary">
+                      <i class="fa-solid fa-floppy-disk me-2"></i> Salvează
+                      Profilul și Locația
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
 
+            <!-- PANE 2: Servicii Medicale Disponibile în Zonal (Filtrate) -->
             <div
-              class="table-responsive"
-              th:if="${not #lists.isEmpty(programari)}"
+              class="tab-pane fade"
+              id="v-pills-servicii"
+              role="tabpanel"
+              tabindex="0"
             >
-              <table class="table table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th>Serviciu Medical</th>
-                    <th>Data / Ora</th>
-                    <th>Locație Vizită</th>
-                    <th class="text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr th:each="p : ${programari}">
-                    <td>
-                      <div
-                        class="fw-bold text-primary"
-                        th:text="${p.serviciu != null ? p.serviciu.denumire : 'Serviciu General'}"
-                      >
-                        Serviciu
+              <div class="dashboard-card">
+                <div class="card-title-custom">
+                  <i class="fa-solid fa-notes-medical text-primary fs-2"></i>
+                  <span
+                    >Servicii Medicale la Domiciliu (Disponibile în zona
+                    ta)</span
+                  >
+                </div>
+
+                <div
+                  th:if="${pacient == null || pacient.oras == null || pacient.oras.isBlank()}"
+                  class="alert alert-warning p-4 rounded-4"
+                >
+                  <i class="fa-solid fa-triangle-exclamation me-2"></i> Te rugăm
+                  să completezi mai întâi <strong>Județul și Orașul</strong> în
+                  tab-ul <strong>"Profil & Locație"</strong> pentru a putea
+                  vizualiza medicii disponibili în zona ta!
+                </div>
+
+                <div
+                  th:if="${pacient != null && pacient.oras != null && !pacient.oras.isBlank() && #lists.isEmpty(servicii)}"
+                  class="empty-state-box"
+                >
+                  <i
+                    class="fa-solid fa-folder-open text-secondary mb-4 opacity-50"
+                    style="font-size: 6rem"
+                  ></i>
+                  <h3 class="fw-bold text-dark mb-3">
+                    Niciun serviciu în zona ta
+                  </h3>
+                  <p class="text-muted fs-5 mb-0">
+                    Nu există momentan medici aprobați care activează în
+                    <span th:text="${pacient.oras}">Oraș</span>.
+                  </p>
+                </div>
+
+                <div
+                  class="row g-4"
+                  th:if="${pacient != null && pacient.oras != null && !pacient.oras.isBlank() && !#lists.isEmpty(servicii)}"
+                >
+                  <div class="col-md-6 col-xl-4" th:each="s : ${servicii}">
+                    <div
+                      class="p-4 border rounded-4 bg-light h-100 shadow-sm d-flex flex-column justify-content-between"
+                    >
+                      <div>
+                        <div
+                          class="d-flex justify-content-between align-items-start mb-3"
+                        >
+                          <h4
+                            class="fw-bold mb-0 text-dark"
+                            th:text="${s.denumire}"
+                          >
+                            Consult
+                          </h4>
+                          <span
+                            class="badge bg-primary fs-6"
+                            th:text="${s.pret} + ' RON'"
+                            >200 RON</span
+                          >
+                        </div>
+                        <p
+                          class="text-muted fs-6 mb-3"
+                          th:text="${s.descriere}"
+                        >
+                          Descriere...
+                        </p>
+                        <div
+                          class="d-flex align-items-center text-secondary fw-bold fs-6 mb-3"
+                        >
+                          <i class="fa-regular fa-clock me-2"></i>
+                          <span th:text="${s.durataMinute}">30</span> minute
+                          &nbsp;|&nbsp;
+                          <i
+                            class="fa-solid fa-user-doctor ms-2 me-1 text-info"
+                          ></i>
+                          <span
+                            th:text="${s.medic != null ? s.medic.nume : 'Medic'}"
+                            >Dr. X</span
+                          >
+                        </div>
                       </div>
-                      <small
-                        class="text-muted"
-                        th:text="${p.serviciu != null && p.serviciu.medic != null ? 'Dr. ' + p.serviciu.medic.nume : 'Dr. Nespecificat'}"
-                        >Medic</small
+
+                      <!-- Formular Programare cu Adresă și Metodă Plată -->
+                      <form
+                        action="/pacient/programeaza"
+                        method="post"
+                        class="mt-auto border-top pt-3"
                       >
-                    </td>
-                    <td
-                      class="small"
-                      th:text="${p.dataOra != null ? #temporals.format(p.dataOra, 'dd-MM-yyyy HH:mm') : 'Dată nespecificată'}"
-                    >
-                      01-01-2026 10:00
-                    </td>
-                    <td
-                      class="small"
-                      th:text="${p.adresaLocatie != null ? p.adresaLocatie : 'Adresă nespecificată'}"
-                    >
-                      Adresă...
-                    </td>
-                    <td class="text-center">
-                      <span
-                        class="badge bg-warning text-dark px-2 py-1"
-                        th:if="${p.status != null && p.status.name() == 'IN_ASTEPTARE'}"
-                        >În Așteptare</span
-                      >
-                      <span
-                        class="badge bg-success px-2 py-1"
-                        th:if="${p.status != null && p.status.name() == 'CONFIRMATA'}"
-                        >Confirmată</span
-                      >
-                      <span
-                        class="badge bg-danger px-2 py-1"
-                        th:if="${p.status != null && p.status.name() == 'ANULATA'}"
-                        >Anulată</span
-                      >
-                      <span
-                        class="badge bg-info px-2 py-1"
-                        th:if="${p.status != null && p.status.name() == 'FINALIZATA'}"
-                        >Finalizată</span
-                      >
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                        <input
+                          type="hidden"
+                          name="serviciuId"
+                          th:value="${s.id}"
+                        />
+
+                        <div class="mb-3">
+                          <label class="form-label fw-bold text-secondary small"
+                            >Data și Ora Vizitei</label
+                          >
+                          <input
+                            type="datetime-local"
+                            name="dataOra"
+                            class="form-control form-control-custom form-control-sm"
+                            required
+                          />
+                        </div>
+
+                        <div class="mb-3">
+                          <label class="form-label fw-bold text-secondary small"
+                            >Adresa Exactă pentru Vizită</label
+                          >
+                          <input
+                            type="text"
+                            name="adresa"
+                            class="form-control form-control-custom form-control-sm"
+                            th:value="${pacient.strada + ' Nr. ' + pacient.numar + (pacient.bloc != null ? ', Bl. ' + pacient.bloc : '') + ', ' + pacient.oras}"
+                            required
+                          />
+                        </div>
+
+                        <div class="mb-3">
+                          <label class="form-label fw-bold text-secondary small"
+                            >Metoda de Plată</label
+                          >
+                          <select
+                            name="metodaPlata"
+                            class="form-control form-control-custom form-control-sm"
+                            required
+                          >
+                            <option value="CARD">Plată Online cu Cardul</option>
+                            <option value="NUMERAR">
+                              Numerar / Cash la Medic
+                            </option>
+                          </select>
+                        </div>
+
+                        <button
+                          type="submit"
+                          class="btn btn-action-primary w-100 py-2 fs-6"
+                        >
+                          <i class="fa-solid fa-calendar-plus me-1"></i>
+                          Confirmă Programarea
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
+            <!-- PANE 3: Programările Mele -->
             <div
-              class="alert alert-info text-center mb-0"
-              th:if="${#lists.isEmpty(programari)}"
+              class="tab-pane fade"
+              id="v-pills-programari"
+              role="tabpanel"
+              tabindex="0"
             >
-              Nu ai nicio programare efectuată până acum. Folosește formularul
-              din stânga pentru a efectua o primă programare!
+              <div class="dashboard-card">
+                <div class="card-title-custom">
+                  <i class="fa-solid fa-calendar-check text-success fs-2"></i>
+                  <span>Istoricul Programărilor Tale</span>
+                </div>
+
+                <div
+                  th:if="${#lists.isEmpty(programari)}"
+                  class="empty-state-box"
+                >
+                  <i
+                    class="fa-solid fa-calendar-xmark text-secondary mb-4 opacity-50"
+                    style="font-size: 6rem"
+                  ></i>
+                  <h3 class="fw-bold text-dark mb-3">Nicio programare</h3>
+                  <p class="text-muted fs-5 mb-0">
+                    Nu ai efectuat nicio programare până acum.
+                  </p>
+                </div>
+
+                <div class="row g-4" th:if="${!#lists.isEmpty(programari)}">
+                  <div class="col-md-6" th:each="p : ${programari}">
+                    <div class="p-4 border rounded-4 bg-light h-100 shadow-sm">
+                      <div
+                        class="d-flex justify-content-between align-items-start mb-2"
+                      >
+                        <h4
+                          class="fw-bold mb-0 text-dark"
+                          th:text="${p.serviciu != null ? p.serviciu.denumire : 'Serviciu'}"
+                        >
+                          Consult
+                        </h4>
+                        <span
+                          class="badge bg-warning text-dark fs-6"
+                          th:text="${p.status}"
+                          >IN_ASTEPTARE</span
+                        >
+                      </div>
+                      <p class="text-muted fs-6 mb-2">
+                        <i
+                          class="fa-solid fa-location-dot me-2 text-danger"
+                        ></i>
+                        <strong th:text="${p.adresa}">Adresă</strong>
+                      </p>
+                      <p class="text-muted fs-6 mb-3">
+                        <i class="fa-regular fa-calendar me-2 text-primary"></i>
+                        <strong th:text="${p.dataOra}">Data</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Bootstrap 5 JS -->
+    <!-- Subsol -->
+    <footer class="text-center text-muted fs-6">
+      <div class="container-fluid">
+        © 2026 HealthConnect. Toate drepturile rezervate.
+      </div>
+    </footer>
+
+    <!-- Bootstrap JS și Leaflet JS pentru hartă -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+      // Inițializare Hartă Leaflet
+      document.addEventListener("DOMContentLoaded", function () {
+        // Coordonate implicite (Târgoviște, România) sau salvate în baza de date
+        let savedLat = [[${pacient != null && pacient.latitudine != null ? pacient.latitudine : 44.9315}]];
+        let savedLng = [[${pacient != null && pacient.longitudine != null ? pacient.longitudine : 25.4578}]];
+
+        var map = L.map('map').setView([savedLat, savedLng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var marker = L.marker([savedLat, savedLng], {draggable: true}).addTo(map);
+
+        // Actualizează câmpurile ascunse când muți markerul
+        function updateInputs(lat, lng) {
+          document.getElementById('latitudine').value = lat;
+          document.getElementById('longitudine').value = lng;
+        }
+
+        marker.on('dragend', function(e) {
+          var coord = marker.getLatLng();
+          updateInputs(coord.lat, coord.lng);
+        });
+
+        map.on('click', function(e) {
+          marker.setLatLng(e.latlng);
+          updateInputs(e.latlng.lat, e.latlng.lng);
+        });
+      });
+    </script>
   </body>
 </html>
