@@ -21,15 +21,16 @@ public class ProgramareController {
         this.programareService = programareService;
     }
 
-    // UC4: Creare Programare Nouă
+  // UC4: Creare Programare Nouă
     @PostMapping
     public ResponseEntity<Programare> creeazaProgramare(
             @RequestParam Long pacientId,
             @RequestParam Long serviciuId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime data,
-            @RequestParam String adresa) {
-
-        Programare programare = programareService.creeazaProgramare(pacientId, serviciuId, data, adresa);
+            @RequestParam String adresa,
+            @RequestParam(required = false) String metodaPlata) {
+        
+        Programare programare = programareService.creeazaProgramare(pacientId, serviciuId, data, adresa, metodaPlata);
         return new ResponseEntity<>(programare, HttpStatus.CREATED);
     }
 

@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 @Table(name = "appointments")
 public class Programare {
 
+    @OneToOne(mappedBy = "programare", cascade = CascadeType.ALL)
+private Recenzie recenzie;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -16,6 +19,9 @@ public class Programare {
 
     @Column(nullable = false)
     private String adresa;
+
+    @Column(nullable = true)
+    private String metodaPlata;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -33,22 +39,26 @@ public class Programare {
 
     public Programare() {}
 
-    public Programare(LocalDateTime dataProgramare, String adresa, StatusProgramare status, Pacient pacient, ServiciuMedical serviciu) {
+    public Programare(LocalDateTime dataProgramare, String adresa, String metodaPlata, StatusProgramare status, Pacient pacient, ServiciuMedical serviciu) {
         this.dataProgramare = dataProgramare;
         this.adresa = adresa;
+        this.metodaPlata = metodaPlata;
         this.status = status;
         this.pacient = pacient;
         this.serviciu = serviciu;
     }
 
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long id) { this.id=id; }
 
     public LocalDateTime getDataProgramare() { return dataProgramare; }
     public void setDataProgramare(LocalDateTime dataProgramare) { this.dataProgramare = dataProgramare; }
 
     public String getAdresa() { return adresa; }
     public void setAdresa(String adresa) { this.adresa = adresa; }
+
+    public String getMetodaPlata() { return metodaPlata; }
+    public void setMetodaPlata(String metodaPlata) { this.metodaPlata = metodaPlata; }
 
     public StatusProgramare getStatus() { return status; }
     public void setStatus(StatusProgramare status) { this.status = status; }
@@ -58,4 +68,7 @@ public class Programare {
 
     public ServiciuMedical getServiciu() { return serviciu; }
     public void setServiciu(ServiciuMedical serviciu) { this.serviciu = serviciu; }
+
+    public Recenzie getRecenzie() { return recenzie; }
+public void setRecenzie(Recenzie recenzie) { this.recenzie = recenzie; }
 }

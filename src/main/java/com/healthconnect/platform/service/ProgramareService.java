@@ -20,21 +20,27 @@ public class ProgramareService {
     private final ServiciuMedicalRepository serviciuMedicalRepository;
 
     public ProgramareService(ProgramareRepository programareRepository,
-                             PacientRepository pacientRepository,
-                             ServiciuMedicalRepository serviciuMedicalRepository) {
+                           PacientRepository pacientRepository,
+                           ServiciuMedicalRepository serviciuMedicalRepository) {
         this.programareRepository = programareRepository;
         this.pacientRepository = pacientRepository;
         this.serviciuMedicalRepository = serviciuMedicalRepository;
     }
 
-    // UC4: Creare Programare
-    public Programare creeazaProgramare(Long pacientId, Long serviciuId, LocalDateTime data, String adresa) {
+   public Programare creeazaProgramare(Long pacientId, Long serviciuId, LocalDateTime data, String adresa, String metodaPlata) {
         Pacient pacient = pacientRepository.findById(pacientId)
                 .orElseThrow(() -> new RuntimeException("Pacientul nu a fost gasit!"));
         ServiciuMedical serviciu = serviciuMedicalRepository.findById(serviciuId)
                 .orElseThrow(() -> new RuntimeException("Serviciul medical nu a fost gasit!"));
 
-        Programare programare = new Programare(data, adresa, StatusProgramare.IN_ASTEPTARE, pacient, serviciu);
+        Programare programare = new Programare();
+        programare.setDataProgramare(data);
+        programare.setAdresa(adresa);
+        programare.setMetodaPlata(metodaPlata);
+        programare.setStatus(StatusProgramare.IN_ASTEPTARE);
+        programare.setPacient(pacient);
+        programare.setServiciu(serviciu);
+
         return programareRepository.save(programare);
     }
 

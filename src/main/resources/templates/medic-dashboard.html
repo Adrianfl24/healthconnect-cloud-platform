@@ -297,6 +297,18 @@
                 <i class="fa-solid fa-house-medical-circle-check me-2"></i>
                 Solicitări
               </button>
+
+              <button
+                class="nav-link text-start"
+                id="v-pills-recenzii-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#v-pills-recenzii"
+                type="button"
+                role="tab"
+                aria-selected="false"
+              >
+                <i class="fa-solid fa-star me-2 text-warning"></i> Recenzii
+              </button>
             </div>
           </div>
         </div>
@@ -376,7 +388,6 @@
                       />
                     </div>
 
-                    <!-- Câmpuri Noi: Țară, Județ, Oraș -->
                     <div class="col-md-4">
                       <label class="form-label fw-bold text-secondary"
                         >Țară</label
@@ -538,7 +549,7 @@
               </div>
             </div>
 
-            <!-- PANE 3: Portofoliu Servicii -->
+            <!-- PANE: Portofoliu (Serviciile Tale Active) -->
             <div
               class="tab-pane fade"
               id="v-pills-portofoliu"
@@ -547,53 +558,75 @@
             >
               <div class="dashboard-card">
                 <div class="card-title-custom">
-                  <i class="fa-solid fa-list-check text-info fs-2"></i>
+                  <i class="fa-solid fa-list-check text-primary fs-2"></i>
                   <span>Serviciile Tale Active</span>
                 </div>
 
-                <div
-                  th:if="${#lists.isEmpty(servicii)}"
-                  class="empty-state-box"
-                >
-                  <i
-                    class="fa-solid fa-folder-open text-secondary mb-4 opacity-50"
-                    style="font-size: 6rem"
-                  ></i>
-                  <h3 class="fw-bold text-dark mb-3">Niciun serviciu</h3>
-                  <p class="text-muted fs-5 mb-0">
-                    Nu ai adăugat încă niciun serviciu medical în platformă.
-                  </p>
+                <div th:if="${#lists.isEmpty(servicii)}" class="text-muted">
+                  Nu ai adăugat niciun serviciu momentan.
                 </div>
 
                 <div class="row g-4" th:if="${!#lists.isEmpty(servicii)}">
-                  <div class="col-md-6 col-xl-4" th:each="s : ${servicii}">
-                    <div class="p-4 border rounded-4 bg-light h-100 shadow-sm">
+                  <th:block
+                    th:each="s : ${servicii}"
+                    th:if="${s.medic != null && s.medic.id == medic.id}"
+                  >
+                    <div class="col-md-6 col-xl-4">
                       <div
-                        class="d-flex justify-content-between align-items-start mb-3"
+                        class="p-4 border rounded-4 bg-light h-100 shadow-sm d-flex flex-column justify-content-between"
                       >
-                        <h4
-                          class="fw-bold mb-0 text-dark"
-                          th:text="${s.denumire}"
+                        <div>
+                          <div
+                            class="d-flex justify-content-between align-items-start mb-3"
+                          >
+                            <h4
+                              class="fw-bold mb-0 text-dark"
+                              th:text="${s.denumire}"
+                            >
+                              Serviciu
+                            </h4>
+                            <span
+                              class="badge bg-primary fs-6"
+                              th:text="${s.pret} + ' RON'"
+                              >200 RON</span
+                            >
+                          </div>
+                          <p
+                            class="text-muted fs-6 mb-3"
+                            th:text="${s.descriere}"
+                          >
+                            Descriere...
+                          </p>
+                          <div
+                            class="d-flex align-items-center text-secondary fw-bold fs-6 mb-3"
+                          >
+                            <i class="fa-regular fa-clock me-2"></i>
+                            <span th:text="${s.durataMinute}">30</span> minute
+                          </div>
+                        </div>
+
+                        <!-- Butonul de Ștergere Serviciu -->
+                        <form
+                          action="/medic/serviciu/sterge"
+                          method="post"
+                          class="mt-auto border-top pt-3 text-end"
                         >
-                          Consult
-                        </h4>
-                        <span
-                          class="badge bg-primary fs-6"
-                          th:text="${s.pret} + ' RON'"
-                          >200 RON</span
-                        >
-                      </div>
-                      <p class="text-muted fs-6 mb-3" th:text="${s.descriere}">
-                        Descriere...
-                      </p>
-                      <div
-                        class="d-flex align-items-center text-secondary fw-bold fs-6"
-                      >
-                        <i class="fa-regular fa-clock me-2"></i>
-                        <span th:text="${s.durataMinute}">30</span> minute
+                          <input
+                            type="hidden"
+                            name="serviciuId"
+                            th:value="${s.id}"
+                          />
+                          <button
+                            type="submit"
+                            class="btn btn-outline-danger btn-sm fw-bold px-3 py-2 rounded-pill"
+                          >
+                            <i class="fa-solid fa-trash-can me-1"></i> Șterge
+                            Serviciul
+                          </button>
+                        </form>
                       </div>
                     </div>
-                  </div>
+                  </th:block>
                 </div>
               </div>
             </div>
@@ -613,25 +646,215 @@
                     ></i>
                     <span>Cererile Pacienților</span>
                   </div>
-                  <span
-                    class="badge bg-success rounded-pill px-4 py-2 fs-6"
-                    th:text="${programari.size()} + ' Total'"
-                    >0 Total</span
-                  >
                 </div>
 
-                <div
-                  th:if="${#lists.isEmpty(programari)}"
-                  class="empty-state-box"
-                >
-                  <i
-                    class="fa-solid fa-inbox text-secondary mb-4 opacity-50"
-                    style="font-size: 6rem"
-                  ></i>
-                  <h3 class="fw-bold text-dark mb-3">Căsuță goală</h3>
-                  <p class="text-muted fs-5 mb-0">
-                    Nu ai primit nicio solicitare de programare până acum.
-                  </p>
+                <!-- Lista cu solicitări -->
+                <div class="row g-4">
+                  <th:block
+                    th:each="p : ${programari}"
+                    th:if="${p.serviciu.medic.id == medic.id}"
+                  >
+                    <div class="col-12">
+                      <div
+                        class="p-4 border rounded-4 bg-light shadow-sm d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-4"
+                      >
+                        <!-- Detalii Programare -->
+                        <div>
+                          <div class="d-flex align-items-center gap-3 mb-2">
+                            <h4 class="fw-bold mb-0 text-dark">
+                              <i
+                                class="fa-solid fa-user-injured text-primary me-2"
+                              ></i
+                              ><span th:text="${p.pacient.nume}"
+                                >Nume Pacient</span
+                              >
+                            </h4>
+
+                            <span
+                              class="badge bg-warning text-dark fs-6"
+                              th:if="${p.status.name() == 'IN_ASTEPTARE'}"
+                              ><i class="fa-solid fa-clock me-1"></i> În
+                              Așteptare</span
+                            >
+                            <span
+                              class="badge bg-success fs-6"
+                              th:if="${p.status.name() == 'ACCEPTATA'}"
+                              ><i class="fa-solid fa-check-double me-1"></i>
+                              Acceptată</span
+                            >
+                            <span
+                              class="badge bg-danger fs-6"
+                              th:if="${p.status.name() == 'ANULATA'}"
+                              ><i class="fa-solid fa-ban me-1"></i>
+                              Respinsă</span
+                            >
+                            <span
+                              class="badge bg-info text-dark fs-6"
+                              th:if="${p.status.name() == 'FINALIZATA'}"
+                              ><i class="fa-solid fa-flag-checkered me-1"></i>
+                              Finalizată</span
+                            >
+                          </div>
+
+                          <p
+                            class="fw-bold text-secondary mb-3 fs-5"
+                            th:text="${p.serviciu.denumire}"
+                          >
+                            Denumire Serviciu
+                          </p>
+
+                          <div
+                            class="d-flex flex-column flex-sm-row gap-3 flex-wrap"
+                          >
+                            <div
+                              class="text-dark fs-6 bg-white px-3 py-2 rounded border"
+                            >
+                              <i
+                                class="fa-regular fa-calendar text-primary me-2"
+                              ></i>
+                              <strong
+                                th:text="${#temporals.format(p.dataProgramare, 'dd-MM-yyyy / HH:mm')}"
+                                >Data și Ora</strong
+                              >
+                            </div>
+
+                            <div
+                              class="text-dark fs-6 bg-white px-3 py-2 rounded border"
+                            >
+                              <i
+                                class="fa-solid fa-location-dot text-danger me-2"
+                              ></i>
+                              <strong th:text="${p.adresa}"
+                                >Adresa pacientului</strong
+                              >
+                            </div>
+
+                            <div
+                              class="text-dark fs-6 bg-white px-3 py-2 rounded border"
+                            >
+                              <i
+                                class="fa-solid fa-wallet text-success me-2"
+                              ></i>
+                              Plată:
+                              <strong th:text="${p.metodaPlata}">Metodă</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Acțiuni Medic -->
+                        <div
+                          class="d-flex gap-2 mt-3 mt-xl-0"
+                          th:if="${p.status.name() == 'IN_ASTEPTARE'}"
+                        >
+                          <form
+                            action="/medic/programare/status"
+                            method="post"
+                            class="m-0"
+                          >
+                            <input
+                              type="hidden"
+                              name="programareId"
+                              th:value="${p.id}"
+                            />
+                            <input
+                              type="hidden"
+                              name="status"
+                              value="ACCEPTATA"
+                            />
+                            <button
+                              type="submit"
+                              class="btn btn-success fw-bold px-4 py-2 rounded-pill shadow-sm"
+                            >
+                              <i class="fa-solid fa-check me-2"></i> Acceptă
+                              Vizita
+                            </button>
+                          </form>
+
+                          <form
+                            action="/medic/programare/status"
+                            method="post"
+                            class="m-0"
+                          >
+                            <input
+                              type="hidden"
+                              name="programareId"
+                              th:value="${p.id}"
+                            />
+                            <input
+                              type="hidden"
+                              name="status"
+                              value="ANULATA"
+                            />
+                            <button
+                              type="submit"
+                              class="btn btn-outline-danger fw-bold px-4 py-2 rounded-pill"
+                            >
+                              <i class="fa-solid fa-xmark me-2"></i> Respinge
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </th:block>
+                </div>
+              </div>
+            </div>
+
+            <!-- PANE 5: Recenzii Primite -->
+            <div
+              class="tab-pane fade"
+              id="v-pills-recenzii"
+              role="tabpanel"
+              tabindex="0"
+            >
+              <div class="dashboard-card">
+                <div class="card-title-custom">
+                  <i class="fa-solid fa-star text-warning fs-2"></i>
+                  <span>Recenziile Primite de la Pacienți</span>
+                </div>
+
+                <div th:if="${#lists.isEmpty(recenzii)}" class="text-muted">
+                  Nu ai primit nicio recenzie momentan.
+                </div>
+
+                <div class="row g-4" th:if="${!#lists.isEmpty(recenzii)}">
+                  <div class="col-12" th:each="r : ${recenzii}">
+                    <div
+                      class="p-4 border rounded-4 bg-light shadow-sm d-flex flex-column gap-2"
+                    >
+                      <div
+                        class="d-flex justify-content-between align-items-center"
+                      >
+                        <div>
+                          <h5 class="fw-bold mb-1 text-dark">
+                            <i class="fa-solid fa-user text-primary me-2"></i>
+                            <span
+                              th:text="${r.programare != null && r.programare.pacient != null ? r.programare.pacient.nume : 'Pacient'}"
+                              >Nume Pacient</span
+                            >
+                          </h5>
+                          <p class="text-muted small mb-0">
+                            Serviciu:
+                            <strong
+                              class="text-dark"
+                              th:text="${r.programare != null && r.programare.serviciu != null ? r.programare.serviciu.denumire : 'N/A'}"
+                              >Serviciu</strong
+                            >
+                          </p>
+                        </div>
+                        <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+                          <i class="fa-solid fa-star me-1"></i>
+                          <span th:text="${r.nota}">5</span> / 5 stele
+                        </span>
+                      </div>
+                      <p
+                        class="text-secondary mb-0 mt-2 fs-6"
+                        th:text="${r.comentariu}"
+                      >
+                        Comentariu lăsat de pacient...
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
