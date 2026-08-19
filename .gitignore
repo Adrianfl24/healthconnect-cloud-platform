@@ -31,3 +31,14 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Ignora binarele descarcate de Terraform
+.terraform/
+
+# Ignora fisierele de state (contin parole si secrete, nu le pune pe net!)
+*.tfstate
+*.tfstate.*
+
+# Alte fisiere specifice
+crash.log
+*.tfvars
