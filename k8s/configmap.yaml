@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: healthconnect-config
+data:
+  db-url: "jdbc:sqlserver://healthconnect-sql-server-2026.database.windows.net:1433;database=healthconnect-db"
+  db-user: "adrianfl24"

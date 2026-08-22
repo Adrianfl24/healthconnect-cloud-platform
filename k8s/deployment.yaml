@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: healthconnect-app
+  labels:
+    app: healthconnect
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: healthconnect
+  template:
+    metadata:
+      labels:
+        app: healthconnect
+    spec:
+      containers:
+        - name: healthconnect-container
+          image: healthconnectacr2026.azurecr.io/healthconnect:1.0
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: healthconnect-config
+                  key: db-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: healthconnect-config
+                  key: db-user
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: healthconnect-secret
+                  key: db-password
