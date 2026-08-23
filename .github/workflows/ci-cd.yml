@@ -66,10 +66,10 @@ jobs:
       - name: Apply K8s Manifests & Update Image
         run: |
           kubectl apply -f k8s/
-          kubectl set image deployment/platform-deployment platform-container=${{ secrets.ACR_LOGIN_SERVER }}/healthconnect-platform:${{ github.sha }}
-          kubectl rollout status deployment/platform-deployment
+          kubectl set image deployment/healthconnect-app healthconnect-container=${{ secrets.ACR_LOGIN_SERVER }}/healthconnect-platform:${{ github.sha }} --dry-run=client -o yaml | kubectl apply -f -
+          kubectl rollout status deployment/healthconnect-app
 
       - name: Print Public IP
         run: |
-          echo "Adresa aplicatiei pe internet:"
-          kubectl get svc platform-service
+          echo "=== Adresa aplicatiei pe internet ==="
+          kubectl get svc healthconnect-service
