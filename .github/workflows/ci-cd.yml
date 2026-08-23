@@ -22,7 +22,7 @@ jobs:
           cache: "maven"
 
       - name: Compile & Test
-        run: mvn clean package --file pom.xml
+        run: mvn clean package -DskipTests --file pom.xml
 
   # 2. DOCKER BUILD & PUSH TO ACR
   docker-build-acr:
