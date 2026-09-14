@@ -53,7 +53,6 @@ variable "sql_admin_user" {
 
 variable "sql_admin_password" {
   type        = string
-  default     = "rapid1923bU1"
   sensitive   = true
   description = "Parola administratorului pentru Azure SQL"
 }
@@ -80,7 +79,7 @@ variable "aks_cluster_name" {
 
 variable "aks_vm_size" {
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2s_v2"
   description = "Tipul și mărimea mașinilor virtuale din clusterul AKS"
 }
 

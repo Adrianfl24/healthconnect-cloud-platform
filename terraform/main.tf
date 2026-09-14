@@ -18,9 +18,7 @@ resource "azurerm_subnet" "subnet" {
   name                 = "healthconnect-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.1.0/24"]
-
-  depends_on = [azurerm_virtual_network.vnet]
+  address_prefixes     = var.subnet_address_prefix
 }
 
 # 3. Registrul Docker (ACR)
@@ -48,18 +46,17 @@ resource "azurerm_mssql_database" "sql_db" {
   name                        = var.sql_db_name
   server_id                   = azurerm_mssql_server.sql_server.id
   sku_name                    = var.sql_sku_name
-  storage_account_type        = "Local" # <--- ADAUGĂ ACEASTĂ LINIE
+  storage_account_type        = "Local" 
   auto_pause_delay_in_minutes = 60
   tags                        = var.tags
   min_capacity                = 0.5
 }
 
-# Permite accesul serviciilor Azure (Spring Boot din AKS) la SQL
 resource "azurerm_mssql_firewall_rule" "allow_azure_services" {
   name             = "AllowAzureServices"
   server_id        = azurerm_mssql_server.sql_server.id
-start_ip_address = "79.118.136.121"
-  end_ip_address   = "79.118.136.121"
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
 }
 
 resource "azurerm_kubernetes_cluster" "aks" {
@@ -69,13 +66,20 @@ resource "azurerm_kubernetes_cluster" "aks" {
   dns_prefix          = var.aks_dns_prefix
 
   default_node_pool {
-    name       = "default"
-    node_count = 1
-    vm_size    = "Standard_B2s_v2" # <--- Schimbat la versiunea v2
+    name           = "default"
+    node_count     = var.aks_node_count
+    vm_size        = var.aks_vm_size
+    vnet_subnet_id = azurerm_subnet.subnet.id
   }
 
   identity {
     type = "SystemAssigned"
+  }
+
+  network_profile {
+    network_plugin = "kubenet"
+    service_cidr   = "10.1.0.0/16" 
+    dns_service_ip = "10.1.0.10"
   }
 
   tags = var.tags
@@ -87,4 +91,9 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   role_definition_name             = "AcrPull"
   scope                            = azurerm_container_registry.acr.id
   skip_service_principal_aad_check = true
+  
+  depends_on = [
+    azurerm_kubernetes_cluster.aks,
+    azurerm_container_registry.acr
+  ]
 }
