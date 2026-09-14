@@ -6,7 +6,7 @@ on:
     branches: ["main"]
 
 jobs:
-  # 1. BUILD JAVA & TESTS
+ 
   build-and-test:
     name: 1. Build Java & Tests
     runs-on: ubuntu-latest
@@ -24,7 +24,7 @@ jobs:
       - name: Compile & Test
         run: mvn clean package -DskipTests --file pom.xml
 
-  # 2. DOCKER BUILD & PUSH TO ACR
+
   docker-build-acr:
     name: 2. Build & Push to Azure Container Registry
     needs: build-and-test
@@ -48,7 +48,7 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/healthconnect-platform:${{ github.sha }}
 
-  # 3. KUBERNETES DEPLOY
+
   k8s-deploy:
     name: 3. Deploy to AKS Cluster
     needs: docker-build-acr
